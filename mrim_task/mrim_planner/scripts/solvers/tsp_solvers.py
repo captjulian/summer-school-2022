@@ -268,14 +268,33 @@ class TSPSolver3D():
             # Prepare positions of the viewpoints in the world
             positions = np.array([vp.pose.point.asList() for vp in viewpoints])
 
-            raise NotImplementedError('[STUDENTS TODO] KMeans clustering of viewpoints not implemented. You have to finish it on your own')
+            #raise NotImplementedError('[STUDENTS TODO] KMeans clustering of viewpoints not implemented. You have to finish it on your own')
             # Tips:
             #  - utilize sklearn.cluster.KMeans implementation (https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html)
             #  - after finding the labels, you may want to swap the classes (e.g., by looking at the distance of the UAVs from the cluster centers)
 
             # TODO: fill 1D list 'labels' of size len(viewpoints) with indices of the robots
-            labels = [randint(0, k - 1) for vp in viewpoints]
-
+            #labels = [randint(0, k - 1) for vp in viewpoints]
+            kmeans = KMeans(n_clusters=k, random_state=0).fit(positions)
+            cluster_c = kmeans.cluster_centers_
+            dist_x0 = problem.start_poses[0].position.x - cluster_c[0][0]
+            dist_y0 = problem.start_poses[0].position.y - cluster_c[0][1]
+            dist_z0 = problem.start_poses[0].position.z - cluster_c[0][2]
+            dist0 = dist_x0*dist_x0 + dist_y0*dist_y0 + dist_z0*dist_z0
+            dist_x1 = problem.start_poses[1].position.x - cluster_c[0][0]
+            dist_y1 = problem.start_poses[1].position.y - cluster_c[0][1]
+            dist_z1 = problem.start_poses[1].position.z - cluster_c[0][2]
+            dist1 = dist_x1*dist_x1 + dist_y1*dist_y1 + dist_z1*dist_z1
+            label_init = kmeans.labels_
+            print(label_init)
+            labels = label_init 
+            if dist0 > dist1: 
+                for num in range(len(labels)):
+                    if label_init[num] > 0:
+                        labels[num] = 0
+                    else:
+                        labels[num] = 1
+            print(labels)
         ## | -------------------- Random clustering ------------------- |
         else:
             labels = [randint(0, k - 1) for vp in viewpoints]
@@ -288,7 +307,7 @@ class TSPSolver3D():
             for label in range(len(labels)):
                 if labels[label] == r:
                     clusters[r].append(viewpoints[label])
-
+            
         return clusters
 
     # #}

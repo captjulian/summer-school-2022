@@ -115,6 +115,7 @@ class RRT:
             x = random.uniform(self.bounds.point_min.x, self.bounds.point_max.x)
             y = random.uniform(self.bounds.point_min.y, self.bounds.point_max.y)
             z = random.uniform(self.bounds.point_min.z, self.bounds.point_max.z)
+            print(x)
             point = Point(x, y, z)
 
             point_valid = self.pointValid(point)
@@ -139,17 +140,20 @@ class RRT:
         point_valid = False
         while not point_valid:
 
-            raise NotImplementedError('[STUDENTS TODO] Implement Gaussian sampling in RRT to speed up the process and narrow the paths.')
+            #raise NotImplementedError('[STUDENTS TODO] Implement Gaussian sampling in RRT to speed up the process and narrow the paths.')
             # Tips:
             #  - sample from Normal distribution: use numpy.random.normal (https://numpy.org/doc/stable/reference/random/generated/numpy.random.normal.html)
             #  - to prevent deadlocks when sampling continuously, increase the sampling space by inflating the standard deviation of the gaussian sampling
 
             # STUDENTS TODO: Sample XYZ in the state space
-            x = 0
-            y = 0
-            z = 0
-
-            point = Point(x, y, z)
+            x = np.random.normal(mean[0], sigma[0], 1)
+            y = np.random.normal(mean[1], sigma[1], 1)
+            z = np.random.normal(mean[2], sigma[2], 1)
+            #sigma = sigma + self.gaussian_sampling_sigma_inflation * sigma
+            #x = 0
+            #y = 0
+            #z = 0
+            point = Point(x[0], y[0], z[0])
             point_valid = self.pointValid(point)
 
         return point.asTuple()
@@ -230,15 +234,17 @@ class RRT:
         neighborhood_points = self.getPointsInNeighborhood(point, neighborhood)
         for neighbor in neighborhood_points:
 
-            raise NotImplementedError('[STUDENTS TODO] Getting node parents in RRT* not implemented. You have to finish it.')
+            #raise NotImplementedError('[STUDENTS TODO] Getting node parents in RRT* not implemented. You have to finish it.')
             # Tips:
             #  - look for neighbor which when connected yields minimal path cost all the way back to the start
             #  - you might need functions 'self.tree.get_cost()' or 'distEuclidean()'
 
             # TODO: fill these two variables
-            cost = float('inf') 
-            parent = closest_point
-
+            #cost = float('inf')
+            cost_now   = self.tree.get_cost(neighbor) + distEuclidean(neighbor, point)
+            if cost_now < cost:
+                parent = neighbor
+                cost = cost_now
         return parent, cost
     # # #}
 
@@ -293,18 +299,53 @@ class RRT:
         if len(path) <= 2:
             return path
 
-        raise NotImplementedError('[STUDENTS TODO] RRT: path straightening is not finished. Finish it on your own.')
+        #raise NotImplementedError('[STUDENTS TODO] RRT: path straightening is not finished. Finish it on your own.')
         # Tips:
         #  - divide the given path by a certain ratio and use this method recursively
-
+        path_0 = path
         if not self.validateLinePath(pt1, pt2, check_bounds=False):
-            
             # [STUDENTS TODO] Replace seg1 and seg2 variables effectively
-            seg1 = path[:1]
-            seg2 = path[1:]
+            NumFail = 0
+            while NumFail < 4 and len(path_0) > 3:
+                num = random.randint(0,len(path_0)-1)
+                ptn = path_0[num][0:3]
+                if self.validateLinePath(pt1, ptn, check_bounds=False) and self.validateLinePath(ptn, pt2, check_bounds=False):
+                   #print("coming inside 1")
+                   seg1 = [path_0[0]]
+                   seg2 = [path_0[num]]
+                   seg3 = [path_0[-1]]
+                   seg1.extend(seg2)
+                   seg1.extend(seg3)
+                   NumFail = 4
 
-            seg1.extend(seg2)
-            return seg1
+                if self.validateLinePath(pt1, ptn, check_bounds=False) and not self.validateLinePath(ptn, pt2, check_bounds=False):
+                   #print("coming inside 2")
+                   #print(ptn)
+                   num_now = num
+                   seg1 = [path_0[0]]
+                   seg2 = path_0[num_now:]
+                   #print(seg2)
+                   #print(ptn)
+                   seg1.extend(seg2)
+                   NumFail = NumFail + 1
+                
+                if not self.validateLinePath(pt1, ptn, check_bounds=False) and self.validateLinePath(ptn, pt2, check_bounds=False):
+                   #print("coming inside 3")
+                   #print(num)
+                   num_now = num + 1
+                   seg1 = path_0[:num_now]
+                   #print(seg1)
+                   #print(ptn)
+                   seg2 = [path_0[-1]]
+                   seg1.extend(seg2)
+                   NumFail = NumFail + 1
+
+                if not self.validateLinePath(pt1, ptn, check_bounds=False) and not self.validateLinePath(ptn, pt2, check_bounds=False):
+                   #print("coming inside 4")
+                   seg1 = path_0
+                   NumFail = NumFail + 1
+                path_0 = seg1
+            return path_0
         
         return [path[0], path[-1]]
     # # #}
